@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>練靶場遊戲</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        cursor: none;
+        background-color: #87ceeb;
+    }
+    #gameCanvas {
+        display: block;
+    }
+    #crosshair {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        margin-left: -10px;
+        margin-top: -10px;
+        pointer-events: none;
+        font-size: 24px;
+        color: red;
+        z-index: 100;
+    }
+    #scoreBoard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 24px;
+        color: white;
+        z-index: 100;
+    }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="crosshair">+</div>
+<div id="scoreBoard">分數: 0</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+
+// 準心位置
+let crossX = canvas.width / 2;
+let crossY = canvas.height / 2;
+
+// 滑鼠移動控制準心
+const crosshair = document.getElementById('crosshair');
+document.addEventListener('mousemove', (e) => {
+    crossX = e.clientX;
+    crossY = e.clientY;
+    crosshair.style.left = crossX + 'px';
+    crosshair.style.top = crossY + 'px';
+});
+
+// 目標物初始設定
+let baseRadius = 30; // 原始大小
+let target = {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    radius: baseRadius,
+    color: 'blue'
+};
+
+// 射擊事件 (左鍵)
+document.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // 左鍵
+        shoot();
+    }
+});
+
+function shoot() {
+    const dx = crossX - target.x;
+    const dy = crossY - target.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    if(distance <= target.radius) {
+        score += 10;
+        document.getElementById('scoreBoard').innerText = '分數: ' + score;
+
+        // 根據分數調整目標大小
+        if(score >= 1500){
+            target.radius = baseRadius - 3*5; // 最小
+        } else if(score >= 500){
+            target.radius = baseRadius - 2*5;
+        } else if(score >= 250){
+            target.radius = baseRadius - 1*5;
+        } else {
+            target.radius = baseRadius;
+        }
+
+        // 生成新的目標
+        target.x = Math.random() * canvas.width;
+        target.y = Math.random() * canvas.height;
+    }
+}
+
+// 遊戲循環
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 畫目標
+    ctx.fillStyle = target.color;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
+    ctx.fill();
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
