@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>第一人稱練靶場</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: #222; /* 簡單背景 */
+        cursor: none; /* 隱藏滑鼠游標 */
+    }
+
+    /* 準心 */
+    #crosshair {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    #crosshair::before, #crosshair::after {
+        content: "";
+        position: absolute;
+        background: white;
+    }
+
+    /* 十字線 */
+    #crosshair::before {
+        width: 2px;
+        height: 20px;
+        left: 9px;
+    }
+
+    #crosshair::after {
+        width: 20px;
+        height: 2px;
+        top: 9px;
+    }
+
+    /* 目標物 */
+    .target {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background: red;
+        border-radius: 50%;
+    }
+
+    /* 分數顯示 */
+    #scoreBoard {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-size: 24px;
+    }
+</style>
+</head>
+<body>
+
+<div id="crosshair"></div>
+<div id="scoreBoard">分數：0</div>
+
+<script>
+// ========== 第一人稱視角（滑鼠移動） ==========
+let viewX = 0;  // 水平視角
+let viewY = 0;  // 垂直視角
+
+document.body.requestPointerLock =
+    document.body.requestPointerLock ||
+    document.body.mozRequestPointerLock;
+
+document.body.onclick = () => {
+    document.body.requestPointerLock();
+};
+
+document.addEventListener("mousemove", e => {
+    if (document.pointerLockElement === document.body) {
+        viewX += e.movementX * 0.1;
+        viewY += e.movementY * 0.1;
+    }
+});
+
+// ========== 目標物系統 ==========
+let score = 0;
+let target = null;
+
+function spawnTarget() {
+    if (target) target.remove();
+
+    target = document.createElement("div");
+    target.className = "target";
+
+    // 隨機位置
+    target.style.left = Math.random() * (window.innerWidth - 40) + "px";
+    target.style.top  = Math.random() * (window.innerHeight - 40) + "px";
+
+    document.body.appendChild(target);
+}
+
+spawnTarget();
+
+// ========== 射擊事件（右鍵） ==========
+document.addEventListener("contextmenu", e => {
+    e.preventDefault(); // 禁止右鍵選單
+
+    // 判斷準心是否落在目標物上
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+
+    const rect = target.getBoundingClientRect();
+
+    if (cx >= rect.left && cx <= rect.right &&
+        cy >= rect.top  && cy <= rect.bottom) {
+
+        score++;
+        document.getElementById("scoreBoard").innerText = "分數：" + score;
+
+        spawnTarget();
+    }
+});
+</script>
+</body>
+</html>
