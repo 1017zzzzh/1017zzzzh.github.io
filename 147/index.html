@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>練靶場遊戲</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        cursor: none;
+        background-color: #87ceeb;
+    }
+    #gameCanvas {
+        display: block;
+    }
+    #crosshair {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        margin-left: -10px;
+        margin-top: -10px;
+        pointer-events: none;
+        font-size: 24px;
+        color: red;
+        z-index: 100;
+    }
+    #scoreBoard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 24px;
+        color: white;
+        z-index: 100;
+    }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="crosshair">+</div>
+<div id="scoreBoard">分數: 0</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+
+// 準心位置
+let crossX = canvas.width / 2;
+let crossY = canvas.height / 2;
+
+// 滑鼠移動控制準心
+const crosshair = document.getElementById('crosshair');
+document.addEventListener('mousemove', (e) => {
+    crossX = e.clientX;
+    crossY = e.clientY;
+    crosshair.style.left = crossX + 'px';
+    crosshair.style.top = crossY + 'px';
+});
+
+// 目標物設定
+let target = {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    radius: 30,
+    color: 'blue'
+};
+
+// 射擊事件 (右鍵)
+document.addEventListener('contextmenu', (e) => {
+    e.preventDefault(); // 取消右鍵選單
+    shoot();
+});
+
+function shoot() {
+    console.log("射擊座標:", crossX, crossY);
+    const dx = crossX - target.x;
+    const dy = crossY - target.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    if(distance <= target.radius) {
+        score += 10;
+        document.getElementById('scoreBoard').innerText = '分數: ' + score;
+        console.log("擊中目標!");
+        // 生成新的目標
+        target.x = Math.random() * canvas.width;
+        target.y = Math.random() * canvas.height;
+    } else {
+        console.log("未擊中");
+    }
+}
+
+// 遊戲循環
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 畫目標
+    ctx.fillStyle = target.color;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
+    ctx.fill();
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
