@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>第一人稱練靶場</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        cursor: none; /* 隱藏滑鼠 */
+        background-color: #87ceeb;
+    }
+    #gameCanvas {
+        display: block;
+    }
+    #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin-left: -10px;
+        margin-top: -10px;
+        pointer-events: none;
+        font-size: 24px;
+        color: white;
+        z-index: 100;
+    }
+    #scoreBoard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 24px;
+        color: white;
+        z-index: 100;
+    }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="crosshair">+</div>
+<div id="scoreBoard">分數: 0</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+
+// 目標物設定
+let target = {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    radius: 30,
+    color: 'red'
+};
+
+// 射擊事件 (右鍵)
+document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    shoot();
+});
+
+function shoot() {
+    // 使用螢幕中央為射擊點
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const dx = centerX - target.x;
+    const dy = centerY - target.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+
+    if(distance < target.radius) {
+        score += 10;
+        document.getElementById('scoreBoard').innerText = '分數: ' + score;
+        // 生成新的目標
+        target.x = Math.random() * canvas.width;
+        target.y = Math.random() * canvas.height;
+    }
+}
+
+// 遊戲循環
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 畫目標
+    ctx.fillStyle = target.color;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
+    ctx.fill();
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
