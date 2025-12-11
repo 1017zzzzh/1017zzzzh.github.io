@@ -7,12 +7,12 @@
     body {
         margin: 0;
         overflow: hidden;
-        background: #222;
-        color: white;
+        background: #ffffff;   /* 白色背景 */
+        color: black;
         font-family: sans-serif;
     }
 
-    /* 準心 */
+    /* 準心（改成灰色 #888） */
     #crosshair {
         position: fixed;
         top: 50%;
@@ -21,17 +21,17 @@
         height: 20px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        color: white;
+        color: #888888;        /* ★ 灰色準心 */
         font-size: 30px;
         user-select: none;
     }
 
-    /* 目標（圓形） */
+    /* 黑色目標物 */
     .target {
         position: absolute;
         width: 60px;
         height: 60px;
-        background: red;
+        background: #000000;
         border-radius: 50%;
     }
 
@@ -41,6 +41,7 @@
         top: 10px;
         left: 10px;
         font-size: 20px;
+        color: black;
     }
 </style>
 </head>
@@ -55,7 +56,6 @@
     let target = null;
     let gameArea = document.getElementById("gameArea");
 
-    // 產生目標物：隨機位置
     function spawnTarget() {
         if (target) target.remove();
 
@@ -71,16 +71,35 @@
         gameArea.appendChild(target);
     }
 
-    spawnTarget(); // 初始目標
+    spawnTarget();
 
-    // 停用右鍵選單
     document.addEventListener("contextmenu", e => e.preventDefault());
 
-    // 右鍵射擊（button = 2）
     document.addEventListener("mousedown", e => {
         if (e.button === 2) {
-
-            // 找出畫面中央的元素（用 elementFromPoint）
             let cx = window.innerWidth / 2;
             let cy = window.innerHeight / 2;
+
             let elem = document.elementFromPoint(cx, cy);
+
+            if (elem && elem.classList.contains("target")) {
+                score++;
+                document.getElementById("score").innerText = "Score: " + score;
+                spawnTarget();
+            }
+        }
+    });
+
+    document.body.addEventListener("click", () => {
+        document.body.requestPointerLock();
+    });
+
+    document.addEventListener("mousemove", e => {
+        if (document.pointerLockElement === document.body) {
+            // 保留位置，未使用
+        }
+    });
+</script>
+
+</body>
+</html>
