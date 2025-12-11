@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>第一人稱練靶場</title>
+<title>第一人稱靶場</title>
 <style>
     body {
         margin: 0;
         overflow: hidden;
-        cursor: none; /* 隱藏滑鼠 */
-        background-color: #87ceeb; /* 天空藍背景 */
+        background-color: #222;
+        cursor: crosshair;
+        color: white;
+        font-family: Arial;
     }
-    #gameCanvas {
-        display: block;
-    }
+
+    /* 準心 */
     #crosshair {
         position: absolute;
         top: 50%;
@@ -22,81 +23,87 @@
         margin-left: -10px;
         margin-top: -10px;
         pointer-events: none;
-        z-index: 100;
     }
+
+    #crosshair:before, #crosshair:after {
+        content: "";
+        position: absolute;
+        background: white;
+    }
+
+    /* 垂直線 */
+    #crosshair:before {
+        left: 9px;
+        top: 0;
+        width: 2px;
+        height: 20px;
+    }
+
+    /* 水平線 */
+    #crosshair:after {
+        top: 9px;
+        left: 0;
+        width: 20px;
+        height: 2px;
+    }
+
+    /* 目標物 */
+    .target {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: red;
+    }
+
     #scoreBoard {
         position: absolute;
         top: 10px;
         left: 10px;
         font-size: 24px;
-        color: white;
-        z-index: 100;
     }
+
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<div id="crosshair">+</div>
-<div id="scoreBoard">分數: 0</div>
+
+<div id="scoreBoard">Score: 0</div>
+<div id="crosshair"></div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
 let score = 0;
+let target = null;
 
-// 滑鼠控制視角 (簡單版：暫時用滑鼠移動改變視角變化量)
-let mouseX = canvas.width / 2;
-let mouseY = canvas.height / 2;
-document.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
+/* 請求瀏覽器鎖定指標 */
+document.body.addEventListener("click", () => {
+    document.body.requestPointerLock();
 });
 
-// 目標物設定
-let target = {
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    radius: 30,
-    color: 'red'
-};
-
-// 射擊事件 (右鍵)
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    shoot(e.clientX, e.clientY);
-});
-
-function shoot(x, y) {
-    // 計算是否擊中目標
-    const dx = x - target.x;
-    const dy = y - target.y;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    if(distance < target.radius) {
-        score += 10;
-        document.getElementById('scoreBoard').innerText = '分數: ' + score;
-        // 生成新的目標
-        target.x = Math.random() * canvas.width;
-        target.y = Math.random() * canvas.height;
+/* 滑鼠視角（僅示意） */
+let viewX = 0, viewY = 0;
+document.addEventListener("mousemove", (e) => {
+    if (document.pointerLockElement === document.body) {
+        viewX += e.movementX;
+        viewY += e.movementY;
+        // 這裡沒有 3D，只記錄值示意
     }
+});
+
+/* 產生新目標物 */
+function spawnTarget() {
+    if (target) target.remove();
+    target = document.createElement("div");
+    target.className = "target";
+
+    // 隨機位置（60px ~ 視窗大小-60）
+    const x = Math.random() * (window.innerWidth - 60) + 30;
+    const y = Math.random() * (window.innerHeight - 60) + 30;
+
+    target.style.left = x + "px";
+    target.style.top = y + "px";
+
+    document.body.appendChild(target);
 }
 
-// 遊戲循環
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 畫目標
-    ctx.fillStyle = target.color;
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
-    ctx.fill();
-
-    requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
-</script>
-</body>
-</html>
+/* 右鍵射擊 */
+document.addEventListener("contextmenu"
