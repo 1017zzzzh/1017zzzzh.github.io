@@ -2,31 +2,25 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>靶場 - 藍色立體目標（左鍵射擊）</title>
+<title>3D 靶場遊戲</title>
 <style>
-    /* 全局隱藏游標，針對所有元素 */
-    * {
-        cursor: none !important;
-    }
-
     html, body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #ffffff;
+        cursor: none; /* 完全隱藏系統游標 */
+        background: #000000;
     }
 
-    /* 覆蓋全畫面但不攔截事件 */
-    #overlay {
+    /* Three.js canvas 全螢幕 */
+    canvas {
+        display: block;
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 10;
+        z-index: 0;
     }
 
     /* 自訂準心 */
@@ -36,10 +30,10 @@
         height: 20px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        color: #777777;
+        color: #ffffff;
         font-size: 32px;
         user-select: none;
-        z-index: 20;
+        z-index: 10;
     }
 
     /* 分數顯示 */
@@ -48,11 +42,11 @@
         top: 10px;
         left: 10px;
         font-size: 20px;
-        color: black;
-        z-index: 30;
+        color: white;
+        z-index: 11;
     }
 
-    /* 藍色立體小球 */
+    /* 藍色立體目標小球 */
     .target {
         position: absolute;
         width: 60px;
@@ -62,17 +56,45 @@
         box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3),
                     inset 5px 5px 10px rgba(255,255,255,0.2),
                     2px 2px 8px rgba(0,0,0,0.5);
+        z-index: 10;
     }
 </style>
 </head>
 <body>
 
-<div id="overlay"></div>
 <div id="crosshair">+</div>
 <div id="score">Score: 0</div>
 <div id="gameArea"></div>
 
+<!-- Three.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
+/* =======================
+   3D 網格背景 (Three.js)
+======================= */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// 創建地板網格
+const gridHelper = new THREE.GridHelper(400, 50, 0x00ff00, 0x333333);
+scene.add(gridHelper);
+
+// 相機位置
+camera.position.set(0, 50, 100);
+camera.lookAt(0,0,0);
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
+
+/* =======================
+   遊戲邏輯
+======================= */
 let score = 0;
 let target = null;
 const crosshair = document.getElementById("crosshair");
@@ -87,6 +109,7 @@ document.addEventListener("mousemove", e => {
 // 生成目標
 function spawnTarget() {
     if (target) target.remove(); // 移除舊目標
+
     target = document.createElement("div");
     target.className = "target";
 
@@ -104,12 +127,20 @@ spawnTarget();
 // 左鍵射擊
 document.addEventListener("mousedown", e => {
     if (e.button !== 0) return; // 只響應左鍵
+
     const elem = document.elementFromPoint(e.clientX, e.clientY);
     if (elem && elem.classList.contains("target")) {
         score++;
         document.getElementById("score").innerText = "Score: " + score;
-        spawnTarget(); // 點中生成新目標
+        spawnTarget();
     }
+});
+
+// 當視窗大小改變，更新 Three.js 相機與 renderer
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 
