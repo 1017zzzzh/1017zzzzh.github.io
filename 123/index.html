@@ -2,35 +2,34 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>第一人稱靶場（準心可動）</title>
+<title>靶場 - 準心可動</title>
 <style>
     body {
         margin: 0;
         overflow: hidden;
-        background: #ffffff;   /* 背景白 */
-        color: black;
+        background: #ffffff;   /* 白色背景 */
+        cursor: none;          /* 隱藏滑鼠指標 */
         font-family: sans-serif;
-        cursor: none;          /* 隱藏滑鼠，靠準心替代 */
     }
 
-    /* 準心（會跟著滑鼠動） */
+    /* 準心 */
     #crosshair {
         position: absolute;
         width: 20px;
         height: 20px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        color: #777777;        /* 灰色 */
+        color: #777777;        /* 灰色準心 */
         font-size: 32px;
         user-select: none;
     }
 
-    /* 黑色目標物 */
+    /* 目標物 */
     .target {
         position: absolute;
         width: 60px;
         height: 60px;
-        background: #000000;
+        background: #000000;   /* 黑色目標 */
         border-radius: 50%;
     }
 
@@ -56,13 +55,13 @@
     const crosshair = document.getElementById("crosshair");
     const gameArea = document.getElementById("gameArea");
 
-    /* 讓準心跟著滑鼠移動 */
+    // 準心跟隨滑鼠
     document.addEventListener("mousemove", e => {
         crosshair.style.left = e.clientX + "px";
         crosshair.style.top = e.clientY + "px";
     });
 
-    /* 生成目標物 */
+    // 生成目標
     function spawnTarget() {
         if (target) target.remove();
         target = document.createElement("div");
@@ -77,10 +76,10 @@
     }
     spawnTarget();
 
-    /* 禁用右鍵選單 */
+    // 禁用右鍵選單
     document.addEventListener("contextmenu", e => e.preventDefault());
 
-    /* 右鍵射擊事件 */
+    // 右鍵射擊
     document.addEventListener("mousedown", e => {
         if (e.button !== 2) return;
 
