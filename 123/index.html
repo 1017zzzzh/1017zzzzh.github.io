@@ -7,35 +7,33 @@
     body {
         margin: 0;
         overflow: hidden;
-        background: #ffffff;   /* 白色背景 */
+        background: #ffffff;   /* ★ 背景白色 */
         color: black;
         font-family: sans-serif;
     }
 
-    /* 準心（改成灰色 #888） */
+    /* ★ 準心：灰色 */
     #crosshair {
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 20px;
-        height: 20px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        color: #888888;        /* ★ 灰色準心 */
-        font-size: 30px;
+        color: #777777;        /* ★ 灰色準心 */
+        font-size: 32px;
         user-select: none;
     }
 
-    /* 黑色目標物 */
+    /* ★ 目標物：黑色圓形 */
     .target {
         position: absolute;
         width: 60px;
         height: 60px;
-        background: #000000;
+        background: #000000;   /* ★ 黑色目標 */
         border-radius: 50%;
     }
 
-    /* 計分 */
+    /* 分數 */
     #score {
         position: fixed;
         top: 10px;
@@ -54,50 +52,44 @@
 <script>
     let score = 0;
     let target = null;
-    let gameArea = document.getElementById("gameArea");
+    const gameArea = document.getElementById("gameArea");
 
+    // 生成目標
     function spawnTarget() {
         if (target) target.remove();
-
         target = document.createElement("div");
         target.className = "target";
 
-        let x = Math.random() * (window.innerWidth - 60);
-        let y = Math.random() * (window.innerHeight - 60);
-
+        const x = Math.random() * (window.innerWidth - 60);
+        const y = Math.random() * (window.innerHeight - 60);
         target.style.left = x + "px";
         target.style.top = y + "px";
 
         gameArea.appendChild(target);
     }
-
     spawnTarget();
 
+    // 禁用右鍵選單
     document.addEventListener("contextmenu", e => e.preventDefault());
 
+    // 右鍵射擊
     document.addEventListener("mousedown", e => {
-        if (e.button === 2) {
-            let cx = window.innerWidth / 2;
-            let cy = window.innerHeight / 2;
+        if (e.button !== 2) return;
 
-            let elem = document.elementFromPoint(cx, cy);
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const elem = document.elementFromPoint(cx, cy);
 
-            if (elem && elem.classList.contains("target")) {
-                score++;
-                document.getElementById("score").innerText = "Score: " + score;
-                spawnTarget();
-            }
+        if (elem && elem.classList.contains("target")) {
+            score++;
+            document.getElementById("score").innerText = "Score: " + score;
+            spawnTarget();
         }
     });
 
+    // 啟用滑鼠鎖定
     document.body.addEventListener("click", () => {
         document.body.requestPointerLock();
-    });
-
-    document.addEventListener("mousemove", e => {
-        if (document.pointerLockElement === document.body) {
-            // 保留位置，未使用
-        }
     });
 </script>
 
