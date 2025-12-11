@@ -10,16 +10,20 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        cursor: none; /* 完全隱藏系統游標 */
+        cursor: none; /* 完全隱藏游標 */
         background: #000000;
     }
 
-    /* Three.js canvas 全螢幕 */
-    canvas {
-        display: block;
+    /* 3D 網格背景 */
+    #grid {
         position: fixed;
-        top: 0;
-        left: 0;
+        width: 200%;
+        height: 200%;
+        top: -50%;
+        left: -50%;
+        background-image: repeating-linear-gradient(#444 0 1px, transparent 1px 20px),
+                          repeating-linear-gradient(90deg, #444 0 1px, transparent 1px 20px);
+        transform: perspective(500px) rotateX(60deg);
         z-index: 0;
     }
 
@@ -62,39 +66,12 @@
 </head>
 <body>
 
+<div id="grid"></div>
 <div id="crosshair">+</div>
 <div id="score">Score: 0</div>
 <div id="gameArea"></div>
 
-<!-- Three.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
-/* =======================
-   3D 網格背景 (Three.js)
-======================= */
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({antialias: true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-// 創建地板網格
-const gridHelper = new THREE.GridHelper(400, 50, 0x00ff00, 0x333333);
-scene.add(gridHelper);
-
-// 相機位置
-camera.position.set(0, 50, 100);
-camera.lookAt(0,0,0);
-
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-animate();
-
-/* =======================
-   遊戲邏輯
-======================= */
 let score = 0;
 let target = null;
 const crosshair = document.getElementById("crosshair");
@@ -136,11 +113,9 @@ document.addEventListener("mousedown", e => {
     }
 });
 
-// 當視窗大小改變，更新 Three.js 相機與 renderer
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+// 當視窗大小改變，自動調整目標範圍
+window.addEventListener("resize", () => {
+    spawnTarget();
 });
 </script>
 
