@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>靶場 - 藍色立體目標（左鍵射擊）</title>
 <style>
+    /* 全局隱藏游標 */
     html, body {
         margin: 0;
         padding: 0;
@@ -11,17 +12,18 @@
         height: 100%;
         overflow: hidden;
         background: #ffffff;
+        cursor: none; /* 完全隱藏系統游標 */
     }
 
-    /* 隱藏滑鼠 */
+    /* 覆蓋整個畫面，但不攔截滑鼠事件 */
     #overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        cursor: none;
-        pointer-events: none; /* 不阻擋滑鼠事件 */
+        pointer-events: none;
+        z-index: 10;
     }
 
     /* 自訂準心 */
@@ -116,3 +118,4 @@ document.addEventListener("mousedown", e => {
 
 </body>
 </html>
+
