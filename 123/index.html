@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <title>靶場 - 藍色立體目標（左鍵射擊）</title>
 <style>
-    /* 全局隱藏游標 */
+    /* 全局隱藏游標，針對所有元素 */
+    * {
+        cursor: none !important;
+    }
+
     html, body {
         margin: 0;
         padding: 0;
@@ -12,10 +16,9 @@
         height: 100%;
         overflow: hidden;
         background: #ffffff;
-        cursor: none; /* 完全隱藏系統游標 */
     }
 
-    /* 覆蓋整個畫面，但不攔截滑鼠事件 */
+    /* 覆蓋全畫面但不攔截事件 */
     #overlay {
         position: fixed;
         top: 0;
@@ -49,7 +52,7 @@
         z-index: 30;
     }
 
-    /* 藍色立體目標小球 */
+    /* 藍色立體小球 */
     .target {
         position: absolute;
         width: 60px;
@@ -83,14 +86,10 @@ document.addEventListener("mousemove", e => {
 
 // 生成目標
 function spawnTarget() {
-    // 如果已有目標，先移除
-    if (target) target.remove();
-
-    // 創建新的目標
+    if (target) target.remove(); // 移除舊目標
     target = document.createElement("div");
     target.className = "target";
 
-    // 隨機位置
     const x = Math.random() * (window.innerWidth - 60);
     const y = Math.random() * (window.innerHeight - 60);
     target.style.left = x + "px";
@@ -99,19 +98,17 @@ function spawnTarget() {
     gameArea.appendChild(target);
 }
 
-// 生成初始目標
+// 初始生成
 spawnTarget();
 
 // 左鍵射擊
 document.addEventListener("mousedown", e => {
     if (e.button !== 0) return; // 只響應左鍵
-
     const elem = document.elementFromPoint(e.clientX, e.clientY);
-
     if (elem && elem.classList.contains("target")) {
         score++;
         document.getElementById("score").innerText = "Score: " + score;
-        spawnTarget(); // 點中後立即生成新目標
+        spawnTarget(); // 點中生成新目標
     }
 });
 </script>
