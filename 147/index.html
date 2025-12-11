@@ -1,110 +1,152 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>練靶場遊戲</title>
+<title>3D 靶場 (Three.js FPS)</title>
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        cursor: none;
-        background-color: #87ceeb;
-    }
-    #gameCanvas {
-        display: block;
-    }
-    #crosshair {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        margin-left: -10px;
-        margin-top: -10px;
-        pointer-events: none;
-        font-size: 24px;
-        color: red;
-        z-index: 100;
-    }
-    #scoreBoard {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        font-size: 24px;
-        color: white;
-        z-index: 100;
-    }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #ffffff; /* 白背景 */
+  }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    cursor: none;  /* 隱藏滑鼠指標 */
+    z-index: 10;
+  }
+  #crosshair {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    color: #777777;
+    font-size: 32px;
+    user-select: none;
+    z-index: 20;
+  }
+  #score {
+    position: fixed;
+    top: 10px; left: 10px;
+    font-size: 20px;
+    color: black;
+    z-index: 30;
+  }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<div id="crosshair">+</div>
-<div id="scoreBoard">分數: 0</div>
+  <div id="overlay"></div>
+  <div id="crosshair">+</div>
+  <div id="score">Score: 0</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/controls/PointerLockControls.js"></script>
+  <script>
+    let scene, camera, renderer;
+    let controls;
+    let raycaster;
+    const targets = [];
+    let score = 0;
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+    init();
+    animate();
 
-let score = 0;
+    function init() {
+      // 場景 + 相機 + 渲染器
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-// 準心位置
-let crossX = canvas.width / 2;
-let crossY = canvas.height / 2;
+      // 控制器（滑鼠 + 鍵盤） — 第一人稱
+      controls = new THREE.PointerLockControls(camera, document.body);
+      document.getElementById('overlay').addEventListener('click', () => {
+        controls.lock();
+      });
+      scene.add(controls.getObject());
 
-// 滑鼠移動控制準心
-const crosshair = document.getElementById('crosshair');
-document.addEventListener('mousemove', (e) => {
-    crossX = e.clientX;
-    crossY = e.clientY;
-    crosshair.style.left = crossX + 'px';
-    crosshair.style.top = crossY + 'px';
-});
+      // 光源
+      const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+      light.position.set(0, 200, 0);
+      scene.add(light);
 
-// 目標物設定
-let target = {
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    radius: 30,
-    color: 'blue'
-};
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(5, 10, 7.5);
+      scene.add(dirLight);
 
-// 射擊事件 (右鍵)
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault(); // 取消右鍵選單
-    shoot();
-});
+      // 地板 (讓你有個參考點)
+      const floorGeo = new THREE.PlaneGeometry(200, 200);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, side: THREE.DoubleSide });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = - Math.PI / 2;
+      scene.add(floor);
 
-function shoot() {
-    console.log("射擊座標:", crossX, crossY);
-    const dx = crossX - target.x;
-    const dy = crossY - target.y;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    if(distance <= target.radius) {
-        score += 10;
-        document.getElementById('scoreBoard').innerText = '分數: ' + score;
-        console.log("擊中目標!");
-        // 生成新的目標
-        target.x = Math.random() * canvas.width;
-        target.y = Math.random() * canvas.height;
-    } else {
-        console.log("未擊中");
+      camera.position.set(0, 2, 5);
+
+      // Raycaster
+      raycaster = new THREE.Raycaster();
+
+      // 生成第一個目標
+      spawnTarget();
+
+      // 監聽右鍵射擊
+      window.addEventListener('mousedown', e => {
+        if (e.button === 2) { // right click
+          shoot();
+        }
+      });
+
+      window.addEventListener('resize', onWindowResize);
     }
-}
 
-// 遊戲循環
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function spawnTarget() {
+      // 隨機黑色立方體
+      const size = 1;
+      const geo = new THREE.BoxGeometry(size, size, size);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+      const box = new THREE.Mesh(geo, mat);
 
-    // 畫目標
-    ctx.fillStyle = target.color;
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
-    ctx.fill();
+      // 隨機位置 (於地板上方)
+      const x = (Math.random() - 0.5) * 50;
+      const z = (Math.random() - 0.5) * 50;
+      const y = size / 2 + 0.1;
+      box.position.set(x, y, z);
 
-    requestAnimationFrame(gameLoop);
-}
+      scene.add(box);
+      targets.push(box);
+    }
 
-gameLoop();
-</script>
+    function shoot() {
+      // 從鏡頭中心發射射線
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+      const intersects = raycaster.intersectObjects(targets);
+      if (intersects.length > 0) {
+        const hit = intersects[0].object;
+        // 移除目標
+        scene.remove(hit);
+        const idx = targets.indexOf(hit);
+        if (idx > -1) targets.splice(idx, 1);
+
+        // 加分
+        score += 1;
+        document.getElementById('score').innerText = 'Score: ' + score;
+
+        // 產生新目標
+        spawnTarget();
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+  </script>
 </body>
 </html>
