@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>靶場 - 立體目標</title>
+<title>靶場 - 藍色立體目標（左鍵射擊）</title>
 <style>
     html, body {
         margin: 0;
@@ -47,12 +47,12 @@
         z-index: 30;
     }
 
-    /* 立體目標小球 */
+    /* 藍色立體目標小球 */
     .target {
         position: absolute;
         width: 60px;
         height: 60px;
-        background: radial-gradient(circle at 30% 30%, #ffffff, #000000);
+        background: radial-gradient(circle at 30% 30%, #87CEFA, #00008B);
         border-radius: 50%;
         box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3),
                     inset 5px 5px 10px rgba(255,255,255,0.2),
@@ -95,12 +95,12 @@
     }
     spawnTarget();
 
-    // 禁用右鍵選單
+    // 禁用右鍵選單（保留防止意外開啟）
     overlay.addEventListener("contextmenu", e => e.preventDefault());
 
-    // 右鍵射擊
+    // 左鍵射擊
     overlay.addEventListener("mousedown", e => {
-        if (e.button !== 2) return; // 只響應右鍵
+        if (e.button !== 0) return; // 只響應左鍵
 
         const cx = parseInt(crosshair.style.left);
         const cy = parseInt(crosshair.style.top);
