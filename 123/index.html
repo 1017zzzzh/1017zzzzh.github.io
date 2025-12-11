@@ -7,29 +7,40 @@
     html, body {
         margin: 0;
         padding: 0;
-        overflow: hidden;
         width: 100%;
         height: 100%;
-        background: #ffffff; /* 白色背景 */
-        cursor: none;        /* ★ 完全隱藏游標 */
+        overflow: hidden;
+        background: #ffffff;  /* 白色背景 */
+    }
+
+    /* 滑鼠完全隱藏 */
+    #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: none;        /* 隱藏游標 */
+        z-index: 10;
     }
 
     #crosshair {
         position: absolute;
-        left: 50%;
-        top: 50%;
+        width: 20px;
+        height: 20px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        color: #777777; /* 灰色準心 */
+        color: #777777;       /* 灰色準心 */
         font-size: 32px;
         user-select: none;
+        z-index: 20;
     }
 
     .target {
         position: absolute;
         width: 60px;
         height: 60px;
-        background: #000000; /* 黑色目標 */
+        background: #000000;  /* 黑色目標 */
         border-radius: 50%;
     }
 
@@ -39,11 +50,13 @@
         left: 10px;
         font-size: 20px;
         color: black;
+        z-index: 30;
     }
 </style>
 </head>
 <body>
 
+<div id="overlay"></div>
 <div id="crosshair">+</div>
 <div id="score">Score: 0</div>
 <div id="gameArea"></div>
@@ -53,9 +66,10 @@
     let target = null;
     const crosshair = document.getElementById("crosshair");
     const gameArea = document.getElementById("gameArea");
+    const overlay = document.getElementById("overlay");
 
-    // 讓準心跟隨滑鼠
-    document.addEventListener("mousemove", e => {
+    // 準心跟隨滑鼠
+    overlay.addEventListener("mousemove", e => {
         crosshair.style.left = e.clientX + "px";
         crosshair.style.top = e.clientY + "px";
     });
@@ -76,10 +90,10 @@
     spawnTarget();
 
     // 禁用右鍵選單
-    document.addEventListener("contextmenu", e => e.preventDefault());
+    overlay.addEventListener("contextmenu", e => e.preventDefault());
 
     // 右鍵射擊
-    document.addEventListener("mousedown", e => {
+    overlay.addEventListener("mousedown", e => {
         if (e.button !== 2) return;
 
         const cx = parseInt(crosshair.style.left);
