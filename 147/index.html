@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>3D FPS 靶場遊戲</title>
+<title>3D 靶場遊戲（FPS 視角）</title>
 
 <style>
 html, body {
@@ -15,20 +15,18 @@ html, body {
     background: #000;
 }
 
-/* 準心固定在畫面中央 */
 #crosshair {
     position: fixed;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    color: #ffffff;
+    color: white;
     font-size: 32px;
     user-select: none;
     z-index: 10;
 }
 
-/* 分數 */
 #score {
     position: fixed;
     top: 10px;
@@ -44,7 +42,6 @@ html, body {
 <div id="crosshair">+</div>
 <div id="score">Score: 0</div>
 
-<!-- Three.js -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <script>
@@ -55,9 +52,9 @@ let targets = [];
 
 const targetRadius = 3;
 
-// FPS 視角控制
+// 視角控制
 let yaw = 0;
-let pitch = 0;
+let pitch = -0.4;   // 預設微微往下看
 const sensitivity = 0.002;
 
 // 初始化
@@ -70,7 +67,9 @@ function init() {
         0.1,
         1000
     );
-    camera.position.set(0, 5, 20);
+
+    // ⭐ 和你一開始一樣的「高處靶場視角」
+    camera.position.set(0, 30, 50);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -84,8 +83,8 @@ function init() {
     const ambient = new THREE.AmbientLight(0x404040);
     scene.add(ambient);
 
-    // 地板
-    const gridHelper = new THREE.GridHelper(200, 40, 0x00ff00, 0x333333);
+    // 大型網格地板（背景感關鍵）
+    const gridHelper = new THREE.GridHelper(300, 60, 0x00ff00, 0x333333);
     scene.add(gridHelper);
 
     raycaster = new THREE.Raycaster();
@@ -104,37 +103,37 @@ function spawnTarget() {
     const mesh = new THREE.Mesh(geometry, material);
 
     mesh.position.set(
-        (Math.random() - 0.5) * 50,
+        (Math.random() - 0.5) * 60,
         targetRadius + 1,
-        (Math.random() - 0.5) * 50
+        (Math.random() - 0.5) * 60
     );
 
     scene.add(mesh);
     targets.push({ mesh });
 }
 
-// 鎖定滑鼠（點擊畫面）
+// 點擊鎖定滑鼠
 document.body.addEventListener("click", () => {
     document.body.requestPointerLock();
 });
 
-// FPS 視角旋轉
+// 滑鼠控制視角（只轉頭，不移動）
 document.addEventListener("mousemove", e => {
     if (document.pointerLockElement !== document.body) return;
 
     yaw   -= e.movementX * sensitivity;
     pitch -= e.movementY * sensitivity;
 
-    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+    pitch = Math.max(-Math.PI / 2.2, Math.min(0, pitch));
 
     camera.rotation.set(pitch, yaw, 0);
 });
 
-// 射擊
+// 射擊（畫面中心）
 document.addEventListener("mousedown", e => {
     if (e.button !== 0) return;
 
-    mouse.set(0, 0); // 畫面中心
+    mouse.set(0, 0);
     raycaster.setFromCamera(mouse, camera);
 
     const intersects = raycaster.intersectObjects(targets.map(t => t.mesh));
@@ -150,19 +149,4 @@ document.addEventListener("mousedown", e => {
 });
 
 // 視窗調整
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// 渲染
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-
-init();
-</script>
-</body>
-</html>
+window.addEve
