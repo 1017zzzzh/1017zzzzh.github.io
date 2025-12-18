@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>3D Aim Trainer</title>
+<title>FPS 3D 靶場遊戲</title>
 <style>
 html, body {
     margin: 0;
@@ -14,20 +14,20 @@ html, body {
     background: #000;
 }
 
-/* 準心固定中央 */
+/* 準心固定在中央 */
 #crosshair {
     position: fixed;
-    top: 50%;
     left: 50%;
+    top: 50%;
     transform: translate(-50%, -50%);
-    pointer-events: none;
-    color: #ffffff;
     font-size: 32px;
+    color: white;
+    pointer-events: none;
     user-select: none;
     z-index: 10;
 }
 
-/* 分數 */
+/* 分數顯示 */
 #score {
     position: fixed;
     top: 10px;
@@ -42,29 +42,34 @@ html, body {
 <div id="crosshair">+</div>
 <div id="score">Score: 0</div>
 
-<!-- Three.js CDN -->
+<!-- Three.js -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
 let scene, camera, renderer, raycaster;
 let score = 0;
 let targets = [];
-const targetRadius = 3; // 球體半徑
+const targetRadius = 3;
 
-// FPS視角控制變數
-let yaw = 0;    // 水平旋轉
-let pitch = 0;  // 垂直旋轉
-let isPointerLocked = false;
+// FPS 視角參數
+let yaw = 0;
+let pitch = 0;
+const sensitivity = 0.002;
 
-// 初始化場景
+init();
+animate();
+
 function init() {
     scene = new THREE.Scene();
 
-    // 相機固定初始位置
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 30, 50);
-    camera.lookAt(0, 0, 0);
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    );
+    camera.position.set(0, 10, 30);
 
-    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -72,95 +77,81 @@ function init() {
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(10, 20, 10);
     scene.add(light);
-    const ambient = new THREE.AmbientLight(0x404040);
-    scene.add(ambient);
+    scene.add(new THREE.AmbientLight(0x404040));
 
-    // 網格背景
-    const gridHelper = new THREE.GridHelper(200, 40, 0x00ff00, 0x333333);
-    scene.add(gridHelper);
+    // 地面網格
+    const grid = new THREE.GridHelper(200, 40, 0x00ff00, 0x333333);
+    scene.add(grid);
 
     raycaster = new THREE.Raycaster();
 
-    // 生成初始目標
     spawnTarget();
-
-    // 啟動畫面渲染
-    animate();
-
-    // 指標鎖定
-    document.body.addEventListener('click', () => {
-        renderer.domElement.requestPointerLock();
-    });
-
-    document.addEventListener('pointerlockchange', () => {
-        isPointerLocked = document.pointerLockElement === renderer.domElement;
-    });
 }
 
-// 生成 3D 小球目標
+// 生成目標球
 function spawnTarget() {
-    const geometry = new THREE.SphereGeometry(targetRadius, 32, 32);
-    const material = new THREE.MeshPhongMaterial({color: 0x1e90ff});
+    targets.forEach(t => scene.remove(t.mesh));
+    targets = [];
 
+    const geometry = new THREE.SphereGeometry(targetRadius, 32, 32);
+    const material = new THREE.MeshPhongMaterial({ color: 0x1e90ff });
     const mesh = new THREE.Mesh(geometry, material);
+
     mesh.position.set(
-        (Math.random()-0.5)*50,
+        (Math.random() - 0.5) * 50,
         targetRadius + 1,
-        (Math.random()-0.5)*50
+        (Math.random() - 0.5) * 50
     );
+
     scene.add(mesh);
-    targets.push({mesh});
+    targets.push({ mesh });
 }
 
-// 滑鼠移動控制視角
-document.addEventListener('mousemove', e => {
-    if (!isPointerLocked) return;
-
-    const sensitivity = 0.002;
-    yaw -= e.movementX * sensitivity;
-    pitch -= e.movementY * sensitivity;
-
-    // 限制上下視角
-    const maxPitch = Math.PI/2 - 0.01;
-    if (pitch > maxPitch) pitch = maxPitch;
-    if (pitch < -maxPitch) pitch = -maxPitch;
-
-    const targetX = Math.cos(pitch) * Math.sin(yaw);
-    const targetY = Math.sin(pitch);
-    const targetZ = Math.cos(pitch) * Math.cos(yaw);
-
-    camera.lookAt(camera.position.x + targetX, camera.position.y + targetY, camera.position.z + targetZ);
+// Pointer Lock（點擊畫面啟用 FPS）
+document.body.addEventListener("click", () => {
+    document.body.requestPointerLock();
 });
 
-// 射擊（沿準心方向）
-document.addEventListener("mousedown", e => {
-    if (e.button !== 0) return; // 左鍵
-    raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
+// 滑鼠控制視角
+document.addEventListener("mousemove", e => {
+    if (document.pointerLockElement !== document.body) return;
 
-    const intersects = raycaster.intersectObjects(targets.map(t => t.mesh));
-    if (intersects.length > 0) {
-        const hit = intersects[0].object;
-        scene.remove(hit);
+    yaw   -= e.movementX * sensitivity;
+    pitch -= e.movementY * sensitivity;
+
+    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+
+    camera.rotation.set(pitch, yaw, 0);
+});
+
+// 射擊（永遠射向畫面中央）
+document.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+
+    const hits = raycaster.intersectObjects(
+        targets.map(t => t.mesh)
+    );
+
+    if (hits.length > 0) {
+        scene.remove(hits[0].object);
         score++;
         document.getElementById("score").innerText = "Score: " + score;
         spawnTarget();
     }
 });
 
-// 渲染循環
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
 
-// 調整視窗
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-init();
 </script>
 </body>
 </html>
