@@ -1,89 +1,99 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>簡易 Aimlab 練靶場</title>
-    <style>
-        body {
-            background-color: #111;
-            color: white;
-            text-align: center;
-            font-family: Arial;
-        }
-
-        #gameArea {
-            position: relative;
-            width: 800px;
-            height: 500px;
-            background-color: #222;
-            margin: 20px auto;
-            border: 2px solid white;
-            cursor: crosshair;
-        }
-
-        .target {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: red;
-            border-radius: 50%;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>網頁版 Aim Trainer</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    user-select: none;
+  }
+  #gameArea {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+  .target {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: red;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #stats {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+  }
+</style>
 </head>
 <body>
+<div id="gameArea"></div>
+<div id="stats">
+  Hits: <span id="hits">0</span><br>
+  Misses: <span id="misses">0</span><br>
+  Accuracy: <span id="accuracy">0%</span>
+</div>
 
-    <h1>🎯 Aimlab 練靶場（網頁版）</h1>
-    <h2>分數：<span id="score">0</span> ｜ 剩餘時間：<span id="time">30</span>s</h2>
+<script>
+const gameArea = document.getElementById('gameArea');
+let hits = 0;
+let misses = 0;
 
-    <div id="gameArea"></div>
+function updateStats() {
+  document.getElementById('hits').textContent = hits;
+  document.getElementById('misses').textContent = misses;
+  const total = hits + misses;
+  const accuracy = total === 0 ? 0 : ((hits / total) * 100).toFixed(2);
+  document.getElementById('accuracy').textContent = accuracy + '%';
+}
 
-    <script>
-        const gameArea = document.getElementById("gameArea");
-        const scoreText = document.getElementById("score");
-        const timeText = document.getElementById("time");
+function spawnTarget() {
+  const target = document.createElement('div');
+  target.classList.add('target');
 
-        let score = 0;
-        let timeLeft = 30;
-        let gameInterval;
+  const maxX = window.innerWidth - 50;
+  const maxY = window.innerHeight - 50;
+  const x = Math.random() * maxX;
+  const y = Math.random() * maxY;
 
-        function createTarget() {
-            const target = document.createElement("div");
-            target.classList.add("target");
+  target.style.left = x + 'px';
+  target.style.top = y + 'px';
 
-            const x = Math.random() * (750);
-            const y = Math.random() * (450);
+  target.addEventListener('click', () => {
+    hits++;
+    updateStats();
+    target.remove();
+    spawnTarget();
+  });
 
-            target.style.left = x + "px";
-            target.style.top = y + "px";
+  gameArea.appendChild(target);
 
-            target.onclick = function () {
-                score++;
-                scoreText.innerText = score;
-                target.remove();
-                createTarget();
-            };
+  // 自動消失
+  setTimeout(() => {
+    if (gameArea.contains(target)) {
+      misses++;
+      updateStats();
+      target.remove();
+      spawnTarget();
+    }
+  }, 1500);
+}
 
-            gameArea.innerHTML = "";
-            gameArea.appendChild(target);
-        }
-
-        function startGame() {
-            createTarget();
-
-            gameInterval = setInterval(() => {
-                timeLeft--;
-                timeText.innerText = timeLeft;
-
-                if (timeLeft <= 0) {
-                    clearInterval(gameInterval);
-                    gameArea.innerHTML = "";
-                    alert("時間到！你的分數是：" + score);
-                }
-            }, 1000);
-        }
-
-        startGame();
-    </script>
-
+// 初始生成目標
+spawnTarget();
+updateStats();
+</script>
 </body>
 </html>
