@@ -1,107 +1,90 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>練靶場遊戲</title>
+<title>3D 靶場遊戲（FPS 人物視角）</title>
+
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        cursor: none; /* 隱藏滑鼠 */
-        background-color: #87ceeb; /* 天空藍背景 */
-    }
-    #gameCanvas {
-        display: block;
-    }
-    #crosshair {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        margin-left: -10px;
-        margin-top: -10px;
-        pointer-events: none;
-        font-size: 24px;
-        color: red;
-        z-index: 100;
-    }
-    #scoreBoard {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        font-size: 24px;
-        color: white;
-        z-index: 100;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: none;
+    background: #000;
+}
+
+#crosshair {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    color: white;
+    font-size: 32px;
+    user-select: none;
+    z-index: 10;
+}
+
+#score {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    color: white;
+    z-index: 11;
+}
 </style>
 </head>
+
 <body>
-<canvas id="gameCanvas"></canvas>
 <div id="crosshair">+</div>
-<div id="scoreBoard">分數: 0</div>
+<div id="score">Score: 0</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
+let scene, camera, renderer, raycaster;
+let mouse = new THREE.Vector2();
 let score = 0;
+let targets = [];
 
-// 準心位置
-let crossX = canvas.width / 2;
-let crossY = canvas.height / 2;
+const targetRadius = 3;
 
-// 滑鼠移動控制準心
-const crosshair = document.getElementById('crosshair');
-document.addEventListener('mousemove', (e) => {
-    crossX = e.clientX;
-    crossY = e.clientY;
-    crosshair.style.left = crossX + 'px';
-    crosshair.style.top = crossY + 'px';
-});
+// FPS 視角控制
+let yaw = 0;
+let pitch = 0;
+const sensitivity = 0.002;
 
-// 目標物設定
-let target = {
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    radius: 30,
-    color: 'blue'
-};
+// 人物眼睛高度（關鍵）
+const EYE_HEIGHT = 1.7;
 
-// 射擊事件 (左鍵)
-document.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { // 左鍵
-        shoot();
-    }
-});
+// 初始化
+function init() {
+    scene = new THREE.Scene();
 
-function shoot() {
-    const dx = crossX - target.x;
-    const dy = crossY - target.y;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    if(distance <= target.radius) {
-        score += 10;
-        document.getElementById('scoreBoard').innerText = '分數: ' + score;
-        // 生成新的目標
-        target.x = Math.random() * canvas.width;
-        target.y = Math.random() * canvas.height;
-    }
-}
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    );
 
-// 遊戲循環
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // ⭐ FPS 人物視角高度
+    camera.position.set(0, EYE_HEIGHT, 20);
 
-    // 畫目標
-    ctx.fillStyle = target.color;
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, target.radius, 0, Math.PI*2);
-    ctx.fill();
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    requestAnimationFrame(gameLoop);
-}
+    // 光源
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10, 20, 10);
+    scene.add(light);
 
-gameLoop();
-</script>
-</body>
-</html>
+    const ambient = new THREE.AmbientLight(0x404040);
+    scene.add(ambient);
+
+    // 大型網格地板（靶場背景）
+    c
