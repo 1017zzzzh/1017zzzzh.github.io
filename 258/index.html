@@ -1,99 +1,167 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>網頁版 Aim Trainer</title>
+<title>FPS 3D 靶場遊戲</title>
 <style>
-  body {
+html, body {
     margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    background-color: #111;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    cursor: none;
+    background: #000;
+}
+
+/* 準心固定在中央 */
+#crosshair {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: white;
+    pointer-events: none;
     user-select: none;
-  }
-  #gameArea {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
-  .target {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    background-color: red;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  #stats {
+    z-index: 10;
+}
+
+/* 分數顯示 */
+#score {
     position: fixed;
     top: 10px;
     left: 10px;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-  }
+    font-size: 20px;
+    color: white;
+    z-index: 11;
+}
 </style>
 </head>
 <body>
-<div id="gameArea"></div>
-<div id="stats">
-  Hits: <span id="hits">0</span><br>
-  Misses: <span id="misses">0</span><br>
-  Accuracy: <span id="accuracy">0%</span>
-</div>
+<div id="crosshair">+</div>
+<div id="score">Score: 0</div>
 
+<!-- Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
-const gameArea = document.getElementById('gameArea');
-let hits = 0;
-let misses = 0;
+let scene, camera, renderer, raycaster;
+let score = 0;
+let targets = [];
+const targetRadius = 3;
 
-function updateStats() {
-  document.getElementById('hits').textContent = hits;
-  document.getElementById('misses').textContent = misses;
-  const total = hits + misses;
-  const accuracy = total === 0 ? 0 : ((hits / total) * 100).toFixed(2);
-  document.getElementById('accuracy').textContent = accuracy + '%';
-}
+// FPS 視角參數
+let yaw = 0;
+let pitch = 0;
+const sensitivity = 0.002;
 
-function spawnTarget() {
-  const target = document.createElement('div');
-  target.classList.add('target');
+init();
+animate();
 
-  const maxX = window.innerWidth - 50;
-  const maxY = window.innerHeight - 50;
-  const x = Math.random() * maxX;
-  const y = Math.random() * maxY;
+function init() {
+    scene = new THREE.Scene();
 
-  target.style.left = x + 'px';
-  target.style.top = y + 'px';
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    );
+    camera.position.set(0, 10, 30);
+    
+    // 初始視角朝向靶場中心
+    const lookTarget = new THREE.Vector3(0, 0, 0);
+    camera.lookAt(lookTarget);
 
-  target.addEventListener('click', () => {
-    hits++;
-    updateStats();
-    target.remove();
+    // 同步 yaw / pitch
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    yaw = Math.atan2(dir.x, dir.z);
+    pitch = Math.asin(dir.y);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // 光源
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10, 20, 10);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // 地面網格
+    const grid = new THREE.GridHelper(200, 40, 0x00ff00, 0x333333);
+    scene.add(grid);
+
+    raycaster = new THREE.Raycaster();
+
     spawnTarget();
-  });
-
-  gameArea.appendChild(target);
-
-  // 自動消失
-  setTimeout(() => {
-    if (gameArea.contains(target)) {
-      misses++;
-      updateStats();
-      target.remove();
-      spawnTarget();
-    }
-  }, 1500);
 }
 
-// 初始生成目標
-spawnTarget();
-updateStats();
+// 生成目標球
+function spawnTarget() {
+    targets.forEach(t => scene.remove(t.mesh));
+    targets = [];
+
+    const geometry = new THREE.SphereGeometry(targetRadius, 32, 32);
+    const material = new THREE.MeshPhongMaterial({ color: 0x1e90ff });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.set(
+        (Math.random() - 0.5) * 50,
+        targetRadius + 1,
+        (Math.random() - 0.5) * 50
+    );
+
+    scene.add(mesh);
+    targets.push({ mesh });
+}
+
+// Pointer Lock（點擊畫面啟用 FPS）
+document.body.addEventListener("click", () => {
+    document.body.requestPointerLock();
+});
+
+// 滑鼠控制視角
+document.addEventListener("mousemove", e => {
+    if (document.pointerLockElement !== document.body) return;
+
+    yaw   -= e.movementX * sensitivity;
+    pitch -= e.movementY * sensitivity;
+
+    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+
+    camera.rotation.set(pitch, yaw, 0);
+});
+
+// 射擊（永遠射向畫面中央）
+document.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+
+    const hits = raycaster.intersectObjects(
+        targets.map(t => t.mesh)
+    );
+
+    if (hits.length > 0) {
+        scene.remove(hits[0].object);
+        score++;
+        document.getElementById("score").innerText = "Score: " + score;
+        spawnTarget();
+    }
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 </body>
 </html>
