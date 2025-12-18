@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>FPS 3D 靶場</title>
+<title>3D 靶場遊戲（FPS 視角）</title>
 
 <style>
 html, body {
@@ -11,8 +11,8 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #000;
     cursor: none;
+    background: #000;
 }
 
 #crosshair {
@@ -20,9 +20,9 @@ html, body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    pointer-events: none;
     color: white;
     font-size: 32px;
-    pointer-events: none;
     user-select: none;
     z-index: 10;
 }
@@ -31,8 +31,8 @@ html, body {
     position: fixed;
     top: 10px;
     left: 10px;
-    color: white;
     font-size: 20px;
+    color: white;
     z-index: 11;
 }
 </style>
@@ -49,10 +49,12 @@ let scene, camera, renderer, raycaster;
 let score = 0;
 let targets = [];
 
+const targetRadius = 3;
+
+// 視角控制
 let yaw = 0;
 let pitch = 0;
 const sensitivity = 0.002;
-const targetRadius = 1.5;
 
 // 初始化
 function init() {
@@ -65,22 +67,24 @@ function init() {
         1000
     );
 
-    // FPS 人物視角高度
+    // ✅ FPS 人物視角高度（只改這裡）
     camera.position.set(0, 1.7, 0);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // 光源
-    scene.add(new THREE.AmbientLight(0x404040));
+    // 光源（不變）
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(10, 20, 10);
     scene.add(light);
 
-    // 地板
-    const grid = new THREE.GridHelper(200, 50, 0x00ff00, 0x333333);
-    scene.add(grid);
+    const ambient = new THREE.AmbientLight(0x404040);
+    scene.add(ambient);
+
+    // 地板背景（完全不動）
+    const gridHelper = new THREE.GridHelper(300, 60, 0x00ff00, 0x333333);
+    scene.add(gridHelper);
 
     raycaster = new THREE.Raycaster();
 
@@ -88,7 +92,7 @@ function init() {
     animate();
 }
 
-// 生成 360° 環繞靶子
+// ✅ 360° 環繞生成靶子（背景不影響）
 function spawnTarget() {
     targets.forEach(t => scene.remove(t.mesh));
     targets = [];
@@ -98,7 +102,7 @@ function spawnTarget() {
     const mesh = new THREE.Mesh(geometry, material);
 
     const angle = Math.random() * Math.PI * 2;
-    const distance = 25 + Math.random() * 20;
+    const distance = 30 + Math.random() * 20;
     const height = 1.5 + Math.random() * 5;
 
     mesh.position.set(
@@ -111,12 +115,12 @@ function spawnTarget() {
     targets.push({ mesh });
 }
 
-// 滑鼠鎖定
+// 點擊鎖定滑鼠
 document.body.addEventListener("click", () => {
     document.body.requestPointerLock();
 });
 
-// 視角控制
+// 滑鼠轉頭
 document.addEventListener("mousemove", e => {
     if (document.pointerLockElement !== document.body) return;
 
@@ -142,7 +146,7 @@ document.addEventListener("mousedown", e => {
     }
 });
 
-// Resize
+// 視窗調整
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -159,3 +163,4 @@ init();
 </script>
 </body>
 </html>
+
